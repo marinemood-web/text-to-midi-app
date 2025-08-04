@@ -1,6 +1,5 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
-const AutoUnpackNativesPlugin = require('@electron-forge/plugin-auto-unpack-natives');
 
 module.exports = {
   packagerConfig: {
@@ -27,7 +26,9 @@ module.exports = {
     }
   ],
   plugins: [
-    new AutoUnpackNativesPlugin(),
+    {
+      name: '@electron-forge/plugin-auto-unpack-natives',
+    },
     new FusesPlugin({
       version: FuseVersion.V1,
       fuses: {
