@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Text to MIDI</title>
+  <script type="module">
+    import { Midi } from 'https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.27/+esm';
+
+    const CHORD_MAP = {
+      // Латиница A-Z
+      A: ['A3', 'C#4', 'E4', 'G4'],
+      B: ['B3', 'D#4', 'F#4', 'G#4'],
+      C: ['C4', 'E4', 'G4', 'B4'],
+      D: ['D4', 'F#4', 'A4', 'C#5'],
+      E: ['E4', 'G#4', 'B4', 'C#5'],
+      F: ['F3', 'A3', 'C4', 'E4'],
+      G: ['G3', 'B3', 'D4', 'F#4'],
+      H: ['B3', 'D#4', 'F#4', 'A4'],
+      I: ['A3', 'C#4', 'E4'],
+      J: ['C4', 'E4', 'G4', 'A4'],
+      K: ['D4', 'F#4', 'A4'],
+      L: ['F3', 'A3', 'C4'],
+      M: ['G3', 'B3', 'D4', 'A4'],
+      N: ['A3', 'C#4', 'E4'],
+      O: ['C4', 'E4', 'G#4'],
+      P: ['D4', 'F#4', 'A4', 'C5'],
+      Q: ['E4', 'G#4', 'B4', 'D5'],
+      R: ['F3', 'A3', 'C4', 'G4'],
+      S: ['G3', 'B3', 'D4', 'F4'],
+      T: ['A3', 'C#4', 'F#4'],
+      U: ['Bb3', 'D4', 'F4', 'G4'],
+      V: ['C4', 'E4', 'F#4', 'B4'],
+      W: ['D4', 'F#4', 'C#5', 'G#4'],
+      X: ['E3', 'F4', 'G#4', 'B4'],
+      Y: ['F#3', 'G#3', 'B3', 'C#4'],
+      Z: ['Gb3', 'A3', 'D4', 'F#4'],
+
+      // Кириллица (в миноре)
+      А: ['A3', 'C4', 'E4'],
+      Б: ['B3', 'D4', 'F4'],
+      В: ['C4', 'Eb4', 'G4'],
+      Г: ['D3', 'F4', 'A4'],
+      Д: ['E3', 'G4', 'B4'],
+      Е: ['F3', 'Ab3', 'C4'],
+      Ж: ['G3', 'Bb3', 'Db4', 'F4'],
+      З: ['Ab3', 'B3', 'Eb4'],
+      И: ['Bb3', 'Db4', 'F4'],
+      Й: ['C3', 'E3', 'G3', 'B3'],
+      К: ['D3', 'F3', 'A3'],
+      Л: ['E3', 'G3', 'B3'],
+      М: ['F#3', 'A3', 'C4'],
+      Н: ['G#3', 'B3', 'D4'],
+      О: ['A#3', 'C#4', 'E4'],
+      П: ['B3', 'D4', 'F4'],
+      Р: ['C#4', 'E4', 'G4'],
+      С: ['D#4', 'F#4', 'A4'],
+      Т: ['F3', 'G#3', 'C4'],
+      У: ['G3', 'A3', 'C4'],
+      Ф: ['Ab3', 'B3', 'Eb4'],
+      Х: ['Bb3', 'Db4', 'F4'],
+      Ц: ['C3', 'Eb3', 'G3', 'B3'],
+      Ч: ['D3', 'F3', 'G#3'],
+      Ш: ['E3', 'F#3', 'C4'],
+      Щ: ['F#3', 'A3', 'C#4', 'E4'],
+      Ъ: ['G#3', 'B3', 'D4', 'F4'],
+      Ы: ['A#3', 'C#4', 'E4', 'G4'],
+      Ь: ['B3', 'D4', 'F#4'],
+      Э: ['C4', 'Eb4', 'F4'],
+      Ю: ['D#3', 'F#3', 'A3'],
+      Я: ['F#3', 'A3', 'C#4'],
+
+      // Цифры
+      '0': ['C2'],          // тишина / удар
+      '1': ['A3', 'G4', 'Bb4'],
+      '2': ['B3', 'D4', 'F4'],
+      '3': ['C4', 'Eb4', 'Gb4'],
+      '4': ['D4', 'F4', 'A4'],
+      '5': ['E4', 'G4', 'B4'],
+      '6': ['F#4', 'A4', 'C5'],
+      '7': ['G4', 'Bb4', 'Db5'],
+      '8': ['Ab4', 'C5', 'Eb5'],
+      '9': ['Bb4', 'D5', 'F5'],
+
+      // Символы
+      '.': ['E5'],     // точка — высокое завершение
+      ',': ['G4'],     // запятая — удержание
+      ' ': [],         // пауза
+      '\n': []         // перенос — пауза
+    };
+
+    window.generateMIDI = async function () {
+      const input = document.getElementById("text").value;
+      const midi = new Midi();
+      const track = midi.addTrack();
+      let time = 0;
+
+      for (const char of input) {
+        const normalized = char.toUpperCase();
+        const chord = CHORD_MAP[normalized];
+
+        if (chord) {
+          for (const note of chord) {
+            track.addNote({ name: note, time, duration: 1 });
+          }
+          time += 1;
+        } else if (normalized === ' ' || normalized === '\n') {
+          time += 1; // пауза
+        }
+      }
+
+      const bytes = midi.toArray();
+      const blob = new Blob([new Uint8Array(bytes)], { type: "audio/midi" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "output.mid";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+  </script>
+</head>
+<body style="font-family:sans-serif;padding:2em">
+  <h1>🎹 Text to MIDI</h1>
+  <textarea id="text" rows="8" cols="50" placeholder="Напиши текст или шёпот..."></textarea><br><br>
+  <button onclick="generateMIDI()">🎼 Скачать MIDI</button>
+</body>
+</html>
